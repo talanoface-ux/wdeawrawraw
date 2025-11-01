@@ -6,7 +6,6 @@ export const getChatResponse = async (
   safetyLevel: SafetyLevel
 ): Promise<string> => {
   try {
-    // کلید از env
     const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY;
 
     if (!apiKey) {
@@ -24,7 +23,6 @@ export const getChatResponse = async (
         })),
     ];
 
-    // درخواست به API Cerebras
     const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -32,7 +30,7 @@ export const getChatResponse = async (
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama3.1-8b", // می‌تونی عوضش کنی به هر مدلی که Cerebras پشتیبانی می‌کنه
+        model: "llama3.1-8b", // مدل پایه Cerebras
         messages: formattedMessages,
         temperature: 0.9,
       }),
