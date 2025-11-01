@@ -11,7 +11,9 @@ const getApiKey = () => {
     process.env.API_KEY;
 
   if (!apiKey) {
-    throw new Error("هیچ‌کدام از متغیرهای محیطی VITE_GEMINI_API_KEY یا API_KEY تنظیم نشده‌اند.");
+    throw new Error(
+      "هیچ‌کدام از متغیرهای محیطی VITE_GEMINI_API_KEY، GEMINI_API_KEY یا API_KEY تنظیم نشده‌اند."
+    );
   }
 
   return apiKey;
