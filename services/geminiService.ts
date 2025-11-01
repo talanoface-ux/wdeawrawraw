@@ -1,32 +1,4 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold, Part } from "@google/genai";
-import { Message, Role, SafetyLevel } from '../types';
-
-// NOTE: The API key is sourced from `process.env.API_KEY`, which is assumed
-// to be set in the execution environment. Do not add any UI for it.
-const getApiKey = () => {
-  const apiKey =
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    process.env.API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      "هیچ‌کدام از متغیرهای محیطی VITE_GEMINI_API_KEY، GEMINI_API_KEY یا API_KEY تنظیم نشده‌اند."
-    );
-  }
-
-  return apiKey;
-};
-
-
-
-
-const safetyLevelMap: Record<SafetyLevel, HarmBlockThreshold> = {
-  [SafetyLevel.DEFAULT]: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  [SafetyLevel.RELAXED]: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-  [SafetyLevel.NO_FILTERS]: HarmBlockThreshold.BLOCK_NONE,
-};
+import { Message, Role, SafetyLevel } from "../types";
 
 export const getChatResponse = async (
   messages: Message[],
@@ -34,70 +6,50 @@ export const getChatResponse = async (
   safetyLevel: SafetyLevel
 ): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    // کلید از env
+    const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY;
 
-    const modelMessages = messages
-        .filter(m => m.role !== Role.SYSTEM && (m.content.trim() !== '' || m.attachment))
-        .map(m => {
-            const parts: Part[] = [];
-            
-            if (m.content.trim() !== '') {
-                parts.push({ text: m.content });
-            }
+    if (!apiKey) {
+      throw new Error("متغیر محیطی VITE_CEREBRAS_API_KEY تنظیم نشده است.");
+    }
 
-            if (m.attachment) {
-                parts.push({
-                    inlineData: {
-                        mimeType: m.attachment.mimeType,
-                        data: m.attachment.data,
-                    }
-                });
-            }
-
-            return {
-                role: m.role === Role.ASSISTANT ? 'model' : 'user',
-                parts: parts
-            };
-        });
-    
-    const safetySettings = [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: safetyLevelMap[safetyLevel] || HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: safetyLevelMap[safetyLevel] || HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: safetyLevelMap[safetyLevel] || HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: safetyLevelMap[safetyLevel] || HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
+    // تبدیل پیام‌ها به ساختار مورد انتظار Cerebras
+    const formattedMessages = [
+      { role: "system", content: systemInstruction },
+      ...messages
+        .filter((m) => m.content.trim() !== "")
+        .map((m) => ({
+          role: m.role === Role.ASSISTANT ? "assistant" : "user",
+          content: m.content,
+        })),
     ];
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: modelMessages,
-        config: {
-            systemInstruction: systemInstruction,
-            temperature: 1.0,
-            topP: 0.9,
-            safetySettings: safetySettings,
-        }
+    // درخواست به API Cerebras
+    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama3.1-8b", // می‌تونی عوضش کنی به هر مدلی که Cerebras پشتیبانی می‌کنه
+        messages: formattedMessages,
+        temperature: 0.9,
+      }),
     });
 
-    return response.text;
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`خطا از سرور Cerebras: ${response.status} → ${text}`);
+    }
+
+    const data = await response.json();
+    const text = data?.choices?.[0]?.message?.content || "پاسخی از مدل دریافت نشد.";
+    return text;
   } catch (error) {
-    console.error("Error fetching from Gemini API:", error);
+    console.error("Error fetching from Cerebras API:", error);
     if (error instanceof Error) {
-        if (error.message.includes('SAFETY')) {
-            return `پاسخ به دلیل تنظیمات ایمنی مسدود شد. می‌توانید «سطح ایمنی» را در تنظیمات پیشرفته تغییر دهید.`;
-        }
-        return `خطایی رخ داد: ${error.message}. لطفاً کلید API و اتصال شبکه خود را بررسی کنید.`;
+      return `خطا: ${error.message}`;
     }
     return "یک خطای ناشناخته رخ داد.";
   }
