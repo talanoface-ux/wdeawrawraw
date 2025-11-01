@@ -4,12 +4,18 @@ import { Message, Role, SafetyLevel } from '../types';
 // NOTE: The API key is sourced from `process.env.API_KEY`, which is assumed
 // to be set in the execution environment. Do not add any UI for it.
 const getApiKey = () => {
-  const apiKey = process.env.API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey =
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.API_KEY;
+
   if (!apiKey) {
-    throw new Error("متغیر محیطی API_KEY یا GOOGLE_API_KEY تنظیم نشده است.");
+    throw new Error("متغیر محیطی VITE_GEMINI_API_KEY تنظیم نشده است.");
   }
   return apiKey;
 };
+
 
 
 const safetyLevelMap: Record<SafetyLevel, HarmBlockThreshold> = {
