@@ -30,7 +30,7 @@ export const getChatResponse = async (
         "X-Title": "My Chatbot",
       },
       body: JSON.stringify({
-        model: "nousresearch/hermes-3-llama-3.1-70b", // 🔹 می‌تونی هر مدل OpenRouter رو اینجا بذاری
+        model: "google/gemini-2.5-pro-exp-03-25", // 🔹 می‌تونی هر مدل OpenRouter رو اینجا بذاری
         messages: formattedMessages,
         temperature: 0.8,
         top_p: 0.9,
