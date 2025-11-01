@@ -30,7 +30,7 @@ export const getChatResponse = async (
         "X-Title": "My Chatbot",
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat-v3-0324:free", // 🔹 می‌تونی هر مدل OpenRouter رو اینجا بذاری
+        model: "google/gemini-2.5-flash", // 🔹 می‌تونی هر مدل OpenRouter رو اینجا بذاری
         messages: formattedMessages,
         temperature: 0.8,
         top_p: 0.9,
