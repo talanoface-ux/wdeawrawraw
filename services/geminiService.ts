@@ -6,46 +6,47 @@ export const getChatResponse = async (
   safetyLevel: SafetyLevel
 ): Promise<string> => {
   try {
-    const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY;
+    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
     if (!apiKey) {
-      throw new Error("متغیر محیطی VITE_CEREBRAS_API_KEY تنظیم نشده است.");
+      throw new Error("متغیر محیطی VITE_OPENROUTER_API_KEY تنظیم نشده است.");
     }
 
-    // تبدیل پیام‌ها به ساختار مورد انتظار Cerebras
+    // تبدیل پیام‌ها به ساختار Chat API
     const formattedMessages = [
-      { role: "system", content: systemInstruction },
-      ...messages
-        .filter((m) => m.content.trim() !== "")
-        .map((m) => ({
-          role: m.role === Role.ASSISTANT ? "assistant" : "user",
-          content: m.content,
-        })),
+      { role: "system", content: systemInstruction || "You are a helpful assistant." },
+      ...messages.map((m) => ({
+        role: m.role === Role.ASSISTANT ? "assistant" : "user",
+        content: m.content,
+      })),
     ];
 
-    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": window.location.origin,
+        "X-Title": "My Chatbot",
       },
       body: JSON.stringify({
-        model: "llama-4-scout-17b-16e-instruct", // مدل پایه Cerebras
+        model: "meta-llama/llama-3.1-70b-instruct", // 🔹 می‌تونی هر مدل OpenRouter رو اینجا بذاری
         messages: formattedMessages,
-        temperature: 0.9,
+        temperature: 0.8,
+        top_p: 0.9,
       }),
     });
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`خطا از سرور Cerebras: ${response.status} → ${text}`);
+      throw new Error(`خطا از OpenRouter: ${response.status} → ${text}`);
     }
 
     const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content || "پاسخی از مدل دریافت نشد.";
+    const text = data?.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
     return text;
   } catch (error) {
-    console.error("Error fetching from Cerebras API:", error);
+    console.error("Error fetching from OpenRouter API:", error);
     if (error instanceof Error) {
       return `خطا: ${error.message}`;
     }
