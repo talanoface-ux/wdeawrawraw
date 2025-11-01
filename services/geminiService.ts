@@ -30,7 +30,7 @@ export const getChatResponse = async (
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama3.1-8b", // مدل پایه Cerebras
+        model: "gpt-oss-120b", // مدل پایه Cerebras
         messages: formattedMessages,
         temperature: 0.9,
       }),
